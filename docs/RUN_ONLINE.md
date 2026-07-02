@@ -1,8 +1,9 @@
 # Run it in a browser (GitHub Codespaces or Gitpod)
 
-There is **no web page for Milestone 1.1** — it's the data + logic foundation, so
-you "run" it from a terminal (migrations + tests). A cloud IDE gives you that
-terminal in a browser tab, on Linux, where Postgres and Prisma both run cleanly.
+Milestone 1.1 is the data + logic foundation (no screen of its own). **Milestone
+1.2 adds the booking screen** — a reference widget that walks a patient through
+doctor → date/time → details → a live held slot with a countdown. That widget is
+the thing to show the client.
 
 Replace `<OWNER>/<REPO>` below with your repository once it's pushed.
 
@@ -22,7 +23,31 @@ runs install ▸ generate ▸ migrate ▸ seed, then `npm test`.
 
 ---
 
-## Run Milestone 1.1 in the terminal
+## See the booking screen (the client-facing visual)
+
+**In a Codespace / Gitpod** (uses the real Express + Prisma app):
+
+```bash
+npm run dev
+```
+
+Then open the forwarded **port 3000** (Codespaces pops a “Open in Browser”
+prompt). You'll see the booking widget backed by the real API.
+
+**On any machine with Postgres but no Prisma** (e.g. the original Windows box):
+
+```bash
+npm run preview      # pg-backed demo server, seeds a doctor + 14 days of slots
+# open http://localhost:3000
+```
+
+Either way you get: pick a doctor → pick a date & time → enter details → the slot
+is **held with a live countdown** (the M1.2 reservation TTL), and the payment
+button shows that Pix + card land in Milestone 1.3.
+
+---
+
+## Prove the guarantees in the terminal (Milestone 1.1)
 
 Once the environment is ready, run these in the built-in terminal:
 

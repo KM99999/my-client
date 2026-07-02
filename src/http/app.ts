@@ -1,5 +1,7 @@
 import express from "express";
 import { pinoHttp } from "pino-http";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { logger } from "../config/logger.js";
 import { healthRouter } from "./routes/health.js";
 import { bookingRouter } from "./routes/booking.js";
@@ -22,6 +24,11 @@ export function createApp() {
   app.use(healthRouter);
   app.use("/api", bookingRouter);
   app.use("/admin", adminRouter);
+
+  // Serve the reference booking widget at "/". `public/` sits at the project
+  // root (two levels up from dist/http or src/http).
+  const publicDir = resolve(dirname(fileURLToPath(import.meta.url)), "../../public");
+  app.use(express.static(publicDir));
 
   app.use(notFound);
   app.use(errorHandler);
