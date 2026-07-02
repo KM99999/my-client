@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clinic Appointments — Booking Demo</title>
+    <style>
+      :root {
+        --bg: #f4f7fb; --card: #ffffff; --ink: #12233b; --muted: #64748b;
+        --line: #e2e8f0; --brand: #0d9488; --brand-ink: #ffffff; --brand-soft: #ccfbf1;
+        --danger: #dc2626; --warn: #b45309; --radius: 14px; --shadow: 0 6px 24px rgba(16,35,59,.08);
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.45; }
+      .wrap { max-width: 480px; margin: 0 auto; padding: 20px 16px 48px; }
+      .demo-banner { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 12px; border-radius: 10px; padding: 9px 12px; margin-bottom: 14px; }
+      header.brand { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+      header.brand .dot { width: 34px; height: 34px; border-radius: 9px; background: var(--brand); color: var(--brand-ink); display: grid; place-items: center; font-weight: 700; }
+      header.brand h1 { font-size: 18px; margin: 0; }
+      .sub { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+      .steps { display: flex; gap: 6px; margin: 0 0 18px; }
+      .steps .s { flex: 1; height: 5px; border-radius: 999px; background: var(--line); }
+      .steps .s.active { background: var(--brand); }
+      .steps .s.done { background: var(--brand-soft); }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 14px; }
+      h2.step-title { font-size: 15px; margin: 0 0 14px; letter-spacing: .2px; }
+      .list { display: grid; gap: 10px; }
+      button.choice, .slotgrid button { text-align: left; width: 100%; border: 1px solid var(--line); background: #fff; border-radius: 11px; padding: 13px 14px; font-size: 14px; cursor: pointer; color: var(--ink); transition: border-color .15s, background .15s; }
+      button.choice:hover, .slotgrid button:hover { border-color: var(--brand); }
+      button.choice .name { font-weight: 600; display: block; }
+      button.choice .spec { color: var(--muted); font-size: 12.5px; }
+      .slotgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+      .slotgrid button { text-align: center; padding: 11px 6px; font-variant-numeric: tabular-nums; }
+      .field { margin-bottom: 12px; }
+      .field label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 5px; }
+      .field input { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; color: var(--ink); background: #fff; }
+      .field input:focus { outline: 2px solid var(--brand-soft); border-color: var(--brand); }
+      .row { display: flex; gap: 10px; align-items: center; }
+      .btn-primary { width: 100%; border: 0; background: var(--brand); color: var(--brand-ink); padding: 13px; border-radius: 11px; font-size: 14.5px; font-weight: 600; cursor: pointer; }
+      .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+      .btn-ghost { background: transparent; border: 1px solid var(--line); color: var(--muted); padding: 10px 12px; border-radius: 10px; font-size: 13px; cursor: pointer; }
+      .muted { color: var(--muted); font-size: 13px; }
+      .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+      .pill.reserved { background: #fef3c7; color: var(--warn); }
+      .pill.paid { background: var(--brand-soft); color: #0f766e; }
+      .pill.expired { background: #fee2e2; color: var(--danger); }
+      .countdown { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+      .center { text-align: center; }
+      .err { color: var(--danger); font-size: 13px; margin-top: 10px; }
+      .foot { text-align: center; color: var(--muted); font-size: 11.5px; margin-top: 22px; }
+      .hidden { display: none; }
+      .summary { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+      .summary b { color: var(--ink); }
+      code { background: #f1f5f9; padding: 1px 5px; border-radius: 5px; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="demo-banner">
+        <b>UI preview</b> · demo data, runs entirely in your browser. The live backend guarantees
+        (no double-booking, reliable expiry) are proven by the project's automated tests.
+      </div>
+      <header class="brand">
+        <div class="dot">+</div>
+        <h1>Clinic Appointments</h1>
+      </header>
+      <p class="sub">Book a consultation in a few taps.</p>
+
+      <div class="steps">
+        <div class="s" data-step="1"></div>
+        <div class="s" data-step="2"></div>
+        <div class="s" data-step="3"></div>
+        <div class="s" data-step="4"></div>
+      </div>
+
+      <section class="card" id="step-doctor">
+        <h2 class="step-title">1 · Choose a doctor</h2>
+        <div class="list" id="doctors"><p class="muted">Loading doctors…</p></div>
+      </section>
+
+      <section class="card hidden" id="step-slots">
+        <h2 class="step-title">2 · Pick a date & time</h2>
+        <div class="summary" id="summary-doctor"></div>
+        <div class="field"><label for="date">Date</label><input type="date" id="date" /></div>
+        <div class="slotgrid" id="slots"></div>
+        <p class="muted" id="slots-empty"></p>
+        <button class="btn-ghost" id="back-1" style="margin-top:12px">← Change doctor</button>
+      </section>
+
+      <section class="card hidden" id="step-patient">
+        <h2 class="step-title">3 · Your details</h2>
+        <div class="summary" id="summary-slot"></div>
+        <div class="field"><label for="pname">Full name</label><input id="pname" autocomplete="name" /></div>
+        <div class="field"><label for="pemail">Email</label><input id="pemail" type="email" autocomplete="email" /></div>
+        <div class="field"><label for="pphone">Phone</label><input id="pphone" inputmode="tel" placeholder="+55…" /></div>
+        <button class="btn-primary" id="reserve-btn">Hold this slot</button>
+        <div class="err hidden" id="reserve-err"></div>
+        <button class="btn-ghost" id="back-2" style="margin-top:12px">← Change time</button>
+      </section>
+
+      <section class="card hidden center" id="step-status">
+        <h2 class="step-title" style="text-align:left">4 · Confirmation</h2>
+        <div id="status-body"></div>
+      </section>
+
+      <p class="foot">Milestone 1.1–1.2 reference widget · reservations are held with a live TTL; payment (Pix + card) arrives in Milestone 1.3.</p>
+    </div>
+
+    <!-- In-browser mock backend: intercepts /api/* so this static page fully works on GitHub Pages. -->
+    <script>
+      (function () {
+        const doctors = [
+          { id: "dr-ana", name: "Dra. Ana Souza", specialty: "Clínica Geral" },
+          { id: "dr-bruno", name: "Dr. Bruno Costa", specialty: "Cardiologia" },
+        ];
+        const TEMPLATES = { 0: ["10:00", "12:00"], 1: ["09:00", "17:00"], 2: ["09:00", "17:00"], 3: ["09:00", "17:00"], 4: ["09:00", "17:00"], 5: ["09:00", "17:00"], 6: ["09:00", "12:00"] };
+        const TTL = 180000; // 3-minute hold, so the countdown + expiry are visible in a demo
+        const reservedSlots = new Set();
+        const reservations = new Map();
+
+        function genSlots(doctorId, date) {
+          if (!doctorId || !date) return [];
+          const [y, m, d] = date.split("-").map(Number);
+          const dow = new Date(y, m - 1, d).getDay();
+          const tpl = TEMPLATES[dow];
+          if (!tpl) return [];
+          const [sh, sm] = tpl[0].split(":").map(Number);
+          const [eh, em] = tpl[1].split(":").map(Number);
+          const now = new Date();
+          const out = [];
+          for (let mins = sh * 60 + sm; mins + 30 <= eh * 60 + em; mins += 30) {
+            const st = new Date(y, m - 1, d, Math.floor(mins / 60), mins % 60);
+            if (st < now) continue;
+            const id = doctorId + "|" + st.toISOString();
+            if (reservedSlots.has(id)) continue;
+            out.push({ id, startsAt: st.toISOString(), endsAt: new Date(st.getTime() + 18e5).toISOString(), status: "Available" });
+          }
+          return out;
+        }
+        const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+        const realFetch = window.fetch.bind(window);
+
+        window.fetch = async (url, opts = {}) => {
+          const u = new URL(url, location.href);
+          const p = u.pathname.replace(/\/+$/, "");
+          if (!p.startsWith("/api/")) return realFetch(url, opts);
+          await new Promise((r) => setTimeout(r, 140));
+          const method = (opts.method || "GET").toUpperCase();
+          try {
+            if (p === "/api/doctors") return json(200, { doctors });
+            if (p === "/api/slots") return json(200, { slots: genSlots(u.searchParams.get("doctorId"), u.searchParams.get("date")) });
+            if (p === "/api/reservations" && method === "POST") {
+              const b = JSON.parse(opts.body || "{}");
+              if (!b.slotId || reservedSlots.has(b.slotId)) return json(409, { error: "slot_unavailable", message: "Slot is no longer available" });
+              reservedSlots.add(b.slotId);
+              const id = "r-" + Math.random().toString(36).slice(2, 9);
+              const startsAt = b.slotId.split("|")[1];
+              const reservedUntil = new Date(Date.now() + TTL).toISOString();
+              reservations.set(id, { slotId: b.slotId, startsAt, reservedUntil, status: "Active" });
+              return json(201, { id, slotId: b.slotId, status: "Active", reservedUntil });
+            }
+            let m;
+            if ((m = p.match(/^\/api\/reservations\/([^/]+)\/payment$/)) && method === "POST")
+              return json(501, { error: "not_implemented", message: "Payment (Pix + card) arrives in Milestone 1.3." });
+            if ((m = p.match(/^\/api\/reservations\/([^/]+)$/))) {
+              const r = reservations.get(m[1]);
+              if (!r) return json(404, { error: "reservation_not_found" });
+              if (r.status === "Active" && Date.now() > new Date(r.reservedUntil)) { r.status = "Expired"; reservedSlots.delete(r.slotId); }
+              const slotStatus = r.status === "Active" ? "Reserved" : r.status === "Paid" ? "Paid" : "Available";
+              return json(200, { reservation: { id: m[1], status: r.status, reservedUntil: r.reservedUntil, slot: { id: r.slotId, status: slotStatus, startsAt: r.startsAt, endsAt: new Date(new Date(r.startsAt).getTime() + 18e5).toISOString() } } });
+            }
+            return json(404, { error: "not_found" });
+          } catch (e) { return json(500, { error: "mock_error", message: String(e) }); }
+        };
+      })();
+    </script>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const api = (p, opts) => fetch(p, opts).then(async (r) => {
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) throw Object.assign(new Error(body.message || body.error || r.statusText), { status: r.status, body });
+        return body;
+      });
+      const state = { doctor: null, slot: null, reservation: null, tick: null };
+
+      function setStep(n) {
+        document.querySelectorAll(".steps .s").forEach((el) => {
+          const s = Number(el.dataset.step);
+          el.classList.toggle("active", s === n);
+          el.classList.toggle("done", s < n);
+        });
+        ["doctor", "slots", "patient", "status"].forEach((name, i) => $("step-" + name).classList.toggle("hidden", i + 1 !== n));
+      }
+
+      async function loadDoctors() {
+        try {
+          const { doctors } = await api("/api/doctors");
+          const box = $("doctors");
+          if (!doctors.length) { box.innerHTML = '<p class="muted">No doctors configured yet.</p>'; return; }
+          box.innerHTML = "";
+          doctors.forEach((d) => {
+            const b = document.createElement("button");
+            b.className = "choice";
+            b.innerHTML = `<span class="name">${d.name}</span><span class="spec">${d.specialty || "General"}</span>`;
+            b.onclick = () => chooseDoctor(d);
+            box.appendChild(b);
+          });
+        } catch (e) { $("doctors").innerHTML = `<p class="err">Could not load doctors: ${e.message}</p>`; }
+      }
+
+      function chooseDoctor(d) {
+        state.doctor = d;
+        $("summary-doctor").innerHTML = `Doctor: <b>${d.name}</b>`;
+        const iso = new Date().toISOString().slice(0, 10);
+        $("date").value = iso; $("date").min = iso;
+        setStep(2); loadSlots();
+      }
+
+      async function loadSlots() {
+        const grid = $("slots"); const empty = $("slots-empty");
+        grid.innerHTML = ""; empty.textContent = "Loading…";
+        try {
+          const { slots } = await api(`/api/slots?doctorId=${encodeURIComponent(state.doctor.id)}&date=${$("date").value}`);
+          if (!slots.length) { empty.textContent = "No open slots on this date — try another day."; return; }
+          empty.textContent = "";
+          slots.forEach((s) => {
+            const t = new Date(s.startsAt);
+            const b = document.createElement("button");
+            b.textContent = t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+            b.onclick = () => chooseSlot(s);
+            grid.appendChild(b);
+          });
+        } catch (e) { empty.innerHTML = `<span class="err">${e.message}</span>`; }
+      }
+
+      function chooseSlot(s) {
+        state.slot = s;
+        const t = new Date(s.startsAt);
+        $("summary-slot").innerHTML = `<b>${state.doctor.name}</b> · ${t.toLocaleDateString()} at <b>${t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</b>`;
+        setStep(3);
+      }
+
+      $("reserve-btn").onclick = async () => {
+        const btn = $("reserve-btn"); const err = $("reserve-err");
+        err.classList.add("hidden");
+        const payload = { slotId: state.slot.id, patientName: $("pname").value.trim(), patientEmail: $("pemail").value.trim(), patientPhone: $("pphone").value.trim() };
+        if (!payload.patientName || !payload.patientEmail || !payload.patientPhone) { err.textContent = "Please fill in all fields."; err.classList.remove("hidden"); return; }
+        btn.disabled = true; btn.textContent = "Holding…";
+        try {
+          state.reservation = await api("/api/reservations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+          setStep(4); renderStatus(); pollStatus();
+        } catch (e) {
+          err.textContent = e.status === 409 ? "Sorry — that slot was just taken. Please pick another time." : e.message;
+          err.classList.remove("hidden");
+        } finally { btn.disabled = false; btn.textContent = "Hold this slot"; }
+      };
+
+      function renderStatus() {
+        const r = state.reservation;
+        const status = (r.status || "Active").toLowerCase();
+        const paid = status === "paid"; const expired = status === "expired";
+        const pill = paid ? '<span class="pill paid">● Paid</span>' : expired ? '<span class="pill expired">● Expired</span>' : '<span class="pill reserved">● Slot held</span>';
+        const t = new Date(state.slot.startsAt);
+        $("status-body").innerHTML = `
+          <div style="text-align:left" class="summary"><b>${state.doctor.name}</b> · ${t.toLocaleDateString()} at <b>${t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</b></div>
+          <div class="row" style="justify-content:space-between; margin: 8px 0 14px"><span class="muted">Reservation status</span> ${pill}</div>
+          ${paid ? '<p class="center" style="color:#0f766e;font-weight:600">Appointment confirmed 🎉</p>'
+            : expired ? `<p class="muted">This hold expired and the slot was released.</p><button class="btn-primary" onclick="location.reload()">Start over</button>`
+            : `<p class="muted" style="margin-bottom:6px">Your slot is held for</p><div class="countdown" id="cd">--:--</div><p class="muted" style="margin:10px 0 16px">Complete payment before the timer runs out.</p><button class="btn-primary" id="pay-btn">Pay with Pix / card</button><div class="muted" id="pay-note" style="margin-top:10px"></div>`}
+        `;
+        if (!paid && !expired) { startCountdown(new Date(r.reservedUntil)); $("pay-btn").onclick = startPayment; }
+      }
+
+      function startCountdown(until) {
+        clearInterval(state.tick);
+        const el = () => $("cd");
+        const update = () => {
+          const ms = until - new Date();
+          if (ms <= 0) { clearInterval(state.tick); if (el()) el().textContent = "00:00"; state.reservation.status = "Expired"; renderStatus(); return; }
+          const s = Math.floor(ms / 1000);
+          if (el()) el().textContent = `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+        };
+        update(); state.tick = setInterval(update, 1000);
+      }
+
+      async function startPayment() {
+        const note = $("pay-note");
+        try {
+          const res = await api(`/api/reservations/${state.reservation.id}/payment`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ method: "pix" }) });
+          note.innerHTML = res.pixQr ? `Pix code generated: <code>${res.pixQr}</code>` : "Payment started.";
+        } catch (e) {
+          note.innerHTML = e.status === 501 ? '<span style="color:var(--warn)">Payment (Pix + card) is delivered in Milestone 1.3.</span>' : `<span class="err">${e.message}</span>`;
+        }
+      }
+
+      function pollStatus() {
+        const id = state.reservation.id;
+        const poll = setInterval(async () => {
+          try {
+            const { reservation } = await api(`/api/reservations/${id}`);
+            if (reservation.status !== state.reservation.status) { state.reservation.status = reservation.status; renderStatus(); }
+            if (["Paid", "Expired", "Cancelled"].includes(reservation.status)) clearInterval(poll);
+          } catch { /* keep polling */ }
+        }, 4000);
+      }
+
+      $("date").addEventListener("change", loadSlots);
+      $("back-1").onclick = () => setStep(1);
+      $("back-2").onclick = () => setStep(2);
+      setStep(1); loadDoctors();
+    </script>
+  </body>
+</html>
