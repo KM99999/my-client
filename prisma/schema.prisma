@@ -1,0 +1,127 @@
+// Milestone 1 — Core "reliability spine" data model.
+// The database is the source of truth: every safety guarantee (no double
+// booking, idempotent webhooks) is enforced by a DB constraint AND app logic.
+// Constraints Prisma cannot express (partial-unique index, GiST exclusion) live
+// in prisma/migrations/*_hard_constraints/migration.sql.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Doctor {
+  id        String   @id @default(uuid())
+  name      String
+  specialty String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  templates AvailabilityTemplate[]
+  slots     AppointmentSlot[]
+}
+
+model AvailabilityTemplate {
+  id          String  @id @default(uuid())
+  doctorId    String
+  dayOfWeek   Int // 0 = Sunday ... 6 = Saturday
+  startTime   String // "09:00"
+  endTime     String // "17:00"
+  slotMinutes Int     @default(30)
+  active      Boolean @default(true)
+
+  doctor Doctor @relation(fields: [doctorId], references: [id])
+
+  @@index([doctorId, dayOfWeek])
+}
+
+enum SlotStatus {
+  Available
+  Reserved
+  Paid
+  Expired
+  Cancelled
+}
+
+model AppointmentSlot {
+  id       String     @id @default(uuid())
+  doctorId String
+  startsAt DateTime
+  endsAt   DateTime
+  status   SlotStatus @default(Available)
+  version  Int        @default(0) // optimistic-lock aid / debugging
+
+  doctor      Doctor       @relation(fields: [doctorId], references: [id])
+  reservation Reservation?
+
+  // A doctor can never have two slots at the same instant.
+  @@unique([doctorId, startsAt])
+  @@index([status, startsAt])
+}
+
+enum ReservationStatus {
+  Active // holds the slot, awaiting payment
+  Paid
+  Expired
+  Cancelled
+}
+
+model Reservation {
+  id            String            @id @default(uuid())
+  slotId        String            @unique
+  patientName   String
+  patientEmail  String
+  patientPhone  String
+  status        ReservationStatus @default(Active)
+  reservedUntil DateTime // now() + TTL
+  createdAt     DateTime          @default(now())
+
+  slot     AppointmentSlot @relation(fields: [slotId], references: [id])
+  payments Payment[]
+}
+
+enum PaymentStatus {
+  Pending
+  Approved
+  Rejected
+  Refunded
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  reservationId  String
+  provider       String
+  providerRef    String? // provider's payment/charge id
+  idempotencyKey String        @unique
+  amountCents    Int
+  method         String // "pix" | "card"
+  status         PaymentStatus @default(Pending)
+  createdAt      DateTime      @default(now())
+
+  reservation Reservation @relation(fields: [reservationId], references: [id])
+}
+
+model WebhookEvent {
+  id              String    @id @default(uuid())
+  provider        String
+  providerEventId String
+  receivedAt      DateTime  @default(now())
+  processedAt     DateTime?
+
+  // The storage-layer guarantee of webhook idempotency.
+  @@unique([provider, providerEventId])
+}
+
+model EventLog {
+  id        String   @id @default(uuid())
+  type      String
+  slotId    String?
+  refId     String?
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+}

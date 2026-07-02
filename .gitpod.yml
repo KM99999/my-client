@@ -1,0 +1,28 @@
+# Gitpod: uses the prebuilt Postgres workspace image (Postgres on localhost:5432,
+# superuser `gitpod`, db `postgres`). We migrate + seed on init, then run tests.
+image: gitpod/workspace-postgres
+
+tasks:
+  - name: booking-core
+    env:
+      DATABASE_URL: "postgresql://gitpod@localhost:5432/postgres?schema=public"
+      PAYMENT_PROVIDER: abacatepay
+      DEFAULT_PRICE_CENTS: "15000"
+    init: |
+      npm install
+      npx prisma generate
+      npx prisma migrate deploy
+      npm run seed
+    command: |
+      echo "Running Milestone 1.1 tests..."
+      npm test
+
+ports:
+  - port: 3000
+    onOpen: notify
+
+vscode:
+  extensions:
+    - Prisma.prisma
+    - dbaeumer.vscode-eslint
+    - esbenp.prettier-vscode
