@@ -13,6 +13,15 @@ export function safeEqualHex(a: string, b: string): boolean {
   return timingSafeEqual(ab, bb);
 }
 
+/** Constant-time comparison of two raw strings (e.g. a shared webhook secret). */
+export function safeEqualStr(a: string | undefined, b: string | undefined): boolean {
+  if (!a || !b) return false;
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
+}
+
 /**
  * Verify an HMAC-SHA256 signature over the raw body. Tolerates a `sha256=`
  * prefix (common convention). Returns false on any malformed input — never

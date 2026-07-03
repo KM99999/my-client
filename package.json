@@ -20,6 +20,7 @@
     "verify:locking": "node scripts/verify-locking.mjs",
     "verify:expiry": "node scripts/verify-expiry.mjs",
     "verify:webhook": "node scripts/verify-webhook.mjs",
+    "sandbox:smoke": "node scripts/sandbox-smoke.mjs",
     "preview": "node scripts/preview-server.mjs",
     "typecheck": "tsc --noEmit",
     "typecheck:test": "tsc -p tsconfig.test.json",
