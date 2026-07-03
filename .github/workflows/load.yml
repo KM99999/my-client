@@ -3,7 +3,7 @@ name: Load test (k6)
 on:
   push:
     branches: [main]
-    paths-ignore: ["**.md", "docs/**", "postman/**", "deliverables/**"]
+    paths-ignore: ["**.md", "docs/**", "postman/**", "deliverables/**", "site/**"]
   workflow_dispatch:
 
 jobs:

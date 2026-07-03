@@ -1,8 +1,8 @@
 name: Deploy booking demo to GitHub Pages
 
+# Manual-only until GitHub Pages is enabled for the repo
+# (Settings > Pages > Source: GitHub Actions), then run from the Actions tab.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
