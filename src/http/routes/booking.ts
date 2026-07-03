@@ -5,6 +5,7 @@ import { createReservation } from "../../reservations/service.js";
 import { startPayment } from "../../payments/startPayment.js";
 import { asyncHandler } from "../middleware/async.js";
 import { validateBody } from "../middleware/validate.js";
+import { writeRateLimiter } from "../middleware/rateLimit.js";
 import { HttpError } from "../middleware/errors.js";
 
 export const bookingRouter = Router();
@@ -56,6 +57,7 @@ const reserveBody = z.object({
 });
 bookingRouter.post(
   "/reservations",
+  writeRateLimiter,
   validateBody(reserveBody),
   asyncHandler(async (req, res) => {
     const reservation = await createReservation(req.body);
@@ -72,6 +74,7 @@ bookingRouter.post(
 const paymentBody = z.object({ method: z.enum(["pix", "card"]) });
 bookingRouter.post(
   "/reservations/:id/payment",
+  writeRateLimiter,
   validateBody(paymentBody),
   asyncHandler(async (req, res) => {
     const result = await startPayment({

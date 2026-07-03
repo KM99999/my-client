@@ -1,0 +1,118 @@
+{
+  "info": {
+    "name": "Booking Core (Milestone 1)",
+    "description": "Full doctor -> confirmation flow for the healthcare booking API. Set the `baseUrl` and `adminKey` collection variables. Requests chain via saved variables (doctorId, slotId, reservationId).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "adminKey", "value": "__set_me__" },
+    { "key": "date", "value": "2026-08-03" },
+    { "key": "doctorId", "value": "" },
+    { "key": "slotId", "value": "" },
+    { "key": "reservationId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        { "name": "GET /healthz", "request": { "method": "GET", "url": "{{baseUrl}}/healthz" } },
+        { "name": "GET /readyz", "request": { "method": "GET", "url": "{{baseUrl}}/readyz" } }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "POST /admin/doctors",
+          "event": [
+            { "listen": "test", "script": { "exec": [
+              "if (pm.response.code === 201) { pm.collectionVariables.set('doctorId', pm.response.json().doctor.id); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-admin-api-key", "value": "{{adminKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Dra. Ana Souza\",\n  \"specialty\": \"Clínica Geral\"\n}" },
+            "url": "{{baseUrl}}/admin/doctors"
+          }
+        },
+        {
+          "name": "POST /admin/doctors/:id/availability",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-admin-api-key", "value": "{{adminKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"dayOfWeek\": 1,\n  \"startTime\": \"09:00\",\n  \"endTime\": \"17:00\",\n  \"slotMinutes\": 30\n}" },
+            "url": "{{baseUrl}}/admin/doctors/{{doctorId}}/availability"
+          }
+        },
+        {
+          "name": "POST /admin/materialize",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "x-admin-api-key", "value": "{{adminKey}}" } ],
+            "url": "{{baseUrl}}/admin/materialize"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Booking flow",
+      "item": [
+        {
+          "name": "1. GET /api/doctors",
+          "event": [
+            { "listen": "test", "script": { "exec": [
+              "const d = pm.response.json().doctors[0];",
+              "if (d) pm.collectionVariables.set('doctorId', d.id);"
+            ] } }
+          ],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/doctors" }
+        },
+        {
+          "name": "2. GET /api/slots",
+          "event": [
+            { "listen": "test", "script": { "exec": [
+              "const s = pm.response.json().slots[0];",
+              "if (s) pm.collectionVariables.set('slotId', s.id);"
+            ] } }
+          ],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/slots?doctorId={{doctorId}}&date={{date}}" }
+        },
+        {
+          "name": "3. POST /api/reservations",
+          "event": [
+            { "listen": "test", "script": { "exec": [
+              "if (pm.response.code === 201) pm.collectionVariables.set('reservationId', pm.response.json().id);"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"slotId\": \"{{slotId}}\",\n  \"patientName\": \"Maria Silva\",\n  \"patientEmail\": \"maria@example.com\",\n  \"patientPhone\": \"+5511999998888\"\n}" },
+            "url": "{{baseUrl}}/api/reservations"
+          }
+        },
+        {
+          "name": "4. POST /api/reservations/:id/payment",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"method\": \"pix\"\n}" },
+            "url": "{{baseUrl}}/api/reservations/{{reservationId}}/payment"
+          }
+        },
+        {
+          "name": "5. GET /api/reservations/:id",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/reservations/{{reservationId}}" }
+        }
+      ]
+    }
+  ]
+}

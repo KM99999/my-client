@@ -1,0 +1,70 @@
+name: Load test (k6)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  k6:
+    name: HTTP concurrency under load
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: booking
+          POSTGRES_PASSWORD: booking
+          POSTGRES_DB: booking
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U booking"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: "postgresql://booking:booking@localhost:5432/booking?schema=public&connection_limit=20&pool_timeout=30"
+      PAYMENT_PROVIDER: "abacatepay"
+      RATE_LIMIT_MAX: "0" # disable throttling so the concurrency proof is clean
+      PORT: "3000"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npm run build
+
+      - name: Seed a doctor + materialized slots
+        run: npm run seed
+
+      - name: Start the web server
+        run: |
+          node dist/server.js &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/healthz && break
+            sleep 1
+          done
+
+      - name: Install k6
+        run: |
+          curl -sSL https://github.com/grafana/k6/releases/download/v0.54.0/k6-v0.54.0-linux-amd64.tar.gz | tar xz
+          sudo mv k6-*/k6 /usr/local/bin/k6
+          k6 version
+
+      - name: Run the load test against one contended slot
+        run: |
+          SLOT_ID=$(node scripts/print-slot.mjs)
+          echo "Contending for slot $SLOT_ID"
+          BASE_URL=http://localhost:3000 SLOT_ID=$SLOT_ID k6 run tests/load/booking-race.js
+
+      - name: Confirm exactly one reservation won (DB check)
+        run: node scripts/assert-one-reservation.mjs
