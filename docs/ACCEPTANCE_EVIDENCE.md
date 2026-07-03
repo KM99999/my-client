@@ -5,11 +5,14 @@ reproducible from the repo; CI re-proves it on every push.
 
 ## Automated CI (Linux + PostgreSQL)
 
-- **Workflow:** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
-- **First green run:** https://github.com/KM99999/my-client/actions/runs/28630199713
-- **Steps, all green:** install → prisma generate → **migrate deploy** →
-  typecheck → unit tests → **integration suite (reserve-race, expiry, webhook)**
-  → concurrency proof → expiry proof → webhook proof.
+- **CI workflow:** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
+  — install → prisma generate → **migrate deploy** → typecheck → unit tests →
+  **integration suite (reserve-race, expiry, webhook)** → concurrency/expiry/webhook proofs.
+  - green run: https://github.com/KM99999/my-client/actions/runs/28630825510
+- **Load workflow:** [`.github/workflows/load.yml`](../.github/workflows/load.yml)
+  — boots the real Express + Prisma server on Linux, runs k6 (50 VUs) at one
+  contended slot, then asserts **exactly one reservation won**.
+  - green run: https://github.com/KM99999/my-client/actions/runs/28630825547
 
 The integration suite runs the guarantees through the **real application code**
 (Prisma `reserveSlot`, `releaseReservation`, the webhook handler) on Linux — not
