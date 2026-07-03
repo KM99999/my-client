@@ -3,8 +3,8 @@
 Client-ready documentation in Word (`.docx`) and PDF. Generated from the
 Markdown sources in [`../docs/`](../docs/); regenerate whenever the docs change.
 
-**Send this one for the full pack:** `Milestone_1_Supporting_Documents` (title
-page + table of contents + every section below).
+**Send this one for the full pack:** `Milestones 1.1 and 1.2` (title page +
+table of contents + every section below combined into a single document).
 
 | Document | Contents |
 |----------|----------|
